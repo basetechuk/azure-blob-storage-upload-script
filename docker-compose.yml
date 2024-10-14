@@ -1,0 +1,44 @@
+services:
+  dev_os:
+    container_name: dev_os
+    hostname: dev_os
+    image: ewalsh200/basephp:7.2.28
+    platform: linux/amd64
+    ports:
+      - "1235:80"  
+    volumes:
+      - ./share:/share
+    env_file:
+      - .env
+
+    networks:
+      dev_net:
+        ipv4_address: 172.12.0.2  
+    restart: unless-stopped
+  # Ofelia Job Runner (recommended for running background jobs)
+  # see https://github.com/mcuadros/ofelia
+  azure_ofelia:
+    container_name: azure_ofelia
+    image: mcuadros/ofelia:latest
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./ofelia/config/config.ini:/etc/ofelia/config.ini
+    ports:
+      - "8509:8012"
+    environment:
+      - TZ=UTC
+      - DOCKER_HOST=unix:///var/run/docker.sock
+    command: daemon --config=/etc/ofelia/config.ini
+    depends_on:
+      - dev_os
+    networks:
+      dev_net:
+        ipv4_address: 172.12.0.4
+    restart: unless-stopped
+networks:
+  dev_net:
+    driver: bridge
+    ipam:
+      driver: default
+      config:
+        - subnet: 172.12.0.0/16  
